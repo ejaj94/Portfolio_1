@@ -1,47 +1,56 @@
-#Nivel Avanzado:
-use sakila;
-#Ejercicio 1:
-#Muestra la suma total de ventas (SUM) y el número de transacciones (COUNT) agrupando por categoría y, dentro de esta, por producto.
-select amount, payment_date, sum(amount) as total_vendido, count(*) as total_transacciones
-from payment
-group by amount, payment_date
-order by amount, total_vendido desc;
+-- ==============================================================================
+-- Ejercicios SQL - Nivel Avanzado
+-- Base de Datos: Sakila
+-- ==============================================================================
 
-#ejercicio 2:
-#Muestre la suma total de pagos (SUM) y el número de alquileres (COUNT) realizados en cada tienda (store_id), desglosado por categoría de película (category.name).
-select amount, sum(amount) as total_pagos from payment;
-select rental_date, count(*) as total_alquileres from rental;
-select film_id as numero_pelicula from inventory;
-select store_id as numero_tienda from store;
-select category_id as numero_categoria from film_category;
-select name as nombre from category;
-select 
-i.store_id,
-c.name as nombre_categoria,
-sum(p.amount) as venta_total,
-count(r.rental_id) as total_renta
-from payment p
-join rental r on p.rental_id = r.rental_id
-join inventory i on r.inventory_id = i.inventory_id
-join film_category fc on i.film_id
-join category c on fc.category_id = c.category_id
-group by i.store_id, c.name
-order by i.store_id, venta_total desc;
+USE sakila;
 
-#Ejercicio 3: Popularidad de Idiomas de Películas por Ciudad. Mostrar la cantidad de alquileres ( COUNT) y la suma total pagada ( SUM) para películas, agrupado por el idioma original de la película ( language) y la ciudad del cliente ( city).
-select 
-l.name as idioma,
-ci.city as ciudad,
-sum(p.amount) as total_ingresos,
-count(r.rental_id) as total_alquileres
-from language l
-join film f on l.language_id = f.language_id
-join inventory i on f.film_id = i.film_id
-join rental r on i.inventory_id = r.inventory_id
-join payment p on r.rental_id = p.rental_id
-join customer c on r.customer_id = c.customer_id
-join address a on c.address_id = a.address_id
-join city ci on a.city_id = ci.city_id
-group by l.name, ci.city
-order by total_ingresos;
+-- ------------------------------------------------------------------------------
+-- 1. Gastos de clientes: Obtener la lista de clientes (nombre y apellido) y el 
+-- dinero total que ha gastado cada uno, ordenado de mayor a menor.
+-- ------------------------------------------------------------------------------
+SELECT c.first_name, c.last_name, SUM(p.amount) AS total_spent 
+FROM customer c
+INNER JOIN payment p ON c.customer_id = p.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+ORDER BY total_spent DESC;
 
+-- ------------------------------------------------------------------------------
+-- 2. Actores sin películas: Encontrar todos los actores (actor) que no 
+-- han participado en ninguna película.
+-- ------------------------------------------------------------------------------
+SELECT a.first_name, a.last_name 
+FROM actor a
+LEFT JOIN film_actor fa ON a.actor_id = fa.actor_id
+WHERE fa.film_id IS NULL;
+
+-- ------------------------------------------------------------------------------
+-- 3. Películas por categoría: Mostrar cuántas películas hay en cada categoría 
+-- (category) ordenado de mayor a menor cantidad.
+-- ------------------------------------------------------------------------------
+SELECT c.name AS category_name, COUNT(fc.film_id) AS total_films 
+FROM category c
+INNER JOIN film_category fc ON c.category_id = fc.category_id
+GROUP BY c.category_id, c.name
+ORDER BY total_films DESC;
+
+-- ------------------------------------------------------------------------------
+-- 4. Clientes más valiosos: Los 3 clientes que han hecho la mayor cantidad 
+-- de alquileres (rental).
+-- ------------------------------------------------------------------------------
+SELECT c.first_name, c.last_name, COUNT(r.rental_id) AS total_rentals 
+FROM customer c
+INNER JOIN rental r ON c.customer_id = r.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+ORDER BY total_rentals DESC
+LIMIT 3;
+
+-- ------------------------------------------------------------------------------
+-- 5. Actores en películas 'G': Mostrar el nombre y apellido de los actores 
+-- que han participado en películas clasificadas como "G".
+-- ------------------------------------------------------------------------------
+SELECT DISTINCT a.first_name, a.last_name 
+FROM actor a
+INNER JOIN film_actor fa ON a.actor_id = fa.actor_id
+INNER JOIN film f ON fa.film_id = f.film_id
+WHERE f.rating = 'G';
